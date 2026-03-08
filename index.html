@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Codeword</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Daily Codeword</h1>
+      <p class="date" id="puzzle-date"></p>
+    </header>
+
+    <div id="loading">
+      <p>Generating today's puzzle...</p>
+    </div>
+
+    <div id="game-container" class="hidden">
+      <div class="toolbar">
+        <div class="timer">
+          <span id="timer-display">00:00</span>
+          <button id="timer-toggle" title="Start/Stop timer">Start</button>
+          <button id="timer-reset" title="Reset timer">Reset</button>
+        </div>
+        <div class="actions">
+          <button id="btn-check">Check</button>
+          <button id="btn-reveal-letter">Reveal Letter</button>
+          <button id="btn-reveal-all">Solution</button>
+        </div>
+      </div>
+
+      <div id="grid-wrapper">
+        <div id="grid"></div>
+      </div>
+
+      <div id="letter-strip">
+        <!-- A-Z with their code numbers -->
+      </div>
+
+      <div id="message" class="hidden"></div>
+
+      <div class="instructions">
+        <details>
+          <summary>How to Play</summary>
+          <p>Codewords are like crosswords, but with no clues. Every letter of the alphabet has been replaced by a number (1-26). The same number always represents the same letter.</p>
+          <p>A few letters are revealed to get you started. Use these to deduce other letters and complete the grid with valid English words.</p>
+          <p><strong>Controls:</strong> Click a cell, then type a letter. Use arrow keys to navigate. Press Delete/Backspace to clear a cell.</p>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/seedrandom.js"></script>
+  <script src="js/words.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
