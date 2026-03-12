@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Daily Codeword social preview</title>
+  <desc id="desc">A dark card with the Daily Codeword title and a stylized numbered puzzle board.</desc>
+  <defs>
+    <linearGradient id="page-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7f2e6"/>
+      <stop offset="52%" stop-color="#f0f0f5"/>
+      <stop offset="100%" stop-color="#dce5ff"/>
+    </linearGradient>
+    <linearGradient id="hero-card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#24325d"/>
+      <stop offset="100%" stop-color="#121827"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#page-bg)"/>
+  <circle cx="1050" cy="120" r="170" fill="#e8c547" opacity="0.24"/>
+  <circle cx="160" cy="560" r="180" fill="#2c3e7b" opacity="0.14"/>
+  <rect x="70" y="70" width="1060" height="490" rx="38" fill="url(#hero-card)"/>
+  <rect x="100" y="100" width="515" height="430" rx="30" fill="#1d2745" stroke="#33477f" stroke-width="2"/>
+
+  <text x="138" y="154" fill="#e8c547" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="26" font-weight="700" letter-spacing="4">DAILY PUZZLE</text>
+  <text x="138" y="241" fill="#ffffff" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="80" font-weight="700">Daily</text>
+  <text x="138" y="326" fill="#ffffff" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="80" font-weight="700">Codeword</text>
+  <text x="138" y="388" fill="#d4e4ff" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="29">One shared grid.</text>
+  <text x="138" y="428" fill="#d4e4ff" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="29">Fresh every day.</text>
+  <rect x="138" y="458" width="314" height="46" rx="23" fill="#e8c547"/>
+  <text x="161" y="488" fill="#1a1a2e" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="22" font-weight="700">wodecords.netlify.app</text>
+
+  <rect x="660" y="102" width="400" height="426" rx="34" fill="#f7f4ec"/>
+  <text x="694" y="154" fill="#2c3e7b" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="24" font-weight="700">Crack the numbered grid</text>
+
+  <g font-family="DejaVu Sans, Segoe UI, sans-serif">
+    <rect x="706" y="188" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="716" y="202" fill="#81879a" font-size="11" font-weight="700">04</text>
+    <text x="727" y="226" fill="#1a1a2e" font-size="25" font-weight="700">A</text>
+    <rect x="770" y="188" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="780" y="202" fill="#81879a" font-size="11" font-weight="700">19</text>
+    <text x="791" y="226" fill="#1a1a2e" font-size="25" font-weight="700">R</text>
+    <rect x="834" y="188" width="56" height="56" rx="10" fill="#1a1a2e"/>
+    <rect x="898" y="188" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="908" y="202" fill="#81879a" font-size="11" font-weight="700">08</text>
+    <text x="919" y="226" fill="#1a1a2e" font-size="25" font-weight="700">E</text>
+    <rect x="962" y="188" width="56" height="56" rx="10" fill="#fff3cd"/>
+    <text x="972" y="202" fill="#9b8a55" font-size="11" font-weight="700">12</text>
+    <text x="983" y="226" fill="#2c3e7b" font-size="25" font-weight="700">L</text>
+
+    <rect x="706" y="252" width="56" height="56" rx="10" fill="#d4e4ff"/>
+    <text x="716" y="266" fill="#7181aa" font-size="11" font-weight="700">06</text>
+    <text x="727" y="290" fill="#1a1a2e" font-size="25" font-weight="700">S</text>
+    <rect x="770" y="252" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="780" y="266" fill="#81879a" font-size="11" font-weight="700">25</text>
+    <text x="791" y="290" fill="#1a1a2e" font-size="25" font-weight="700">O</text>
+    <rect x="834" y="252" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="844" y="266" fill="#81879a" font-size="11" font-weight="700">18</text>
+    <text x="855" y="290" fill="#1a1a2e" font-size="25" font-weight="700">L</text>
+    <rect x="898" y="252" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="908" y="266" fill="#81879a" font-size="11" font-weight="700">11</text>
+    <text x="919" y="290" fill="#1a1a2e" font-size="25" font-weight="700">V</text>
+    <rect x="962" y="252" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="972" y="266" fill="#81879a" font-size="11" font-weight="700">03</text>
+    <text x="983" y="290" fill="#1a1a2e" font-size="25" font-weight="700">E</text>
+
+    <rect x="706" y="316" width="56" height="56" rx="10" fill="#1a1a2e"/>
+    <rect x="770" y="316" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="780" y="330" fill="#81879a" font-size="11" font-weight="700">14</text>
+    <text x="791" y="354" fill="#1a1a2e" font-size="25" font-weight="700">T</text>
+    <rect x="834" y="316" width="56" height="56" rx="10" fill="#fff3cd"/>
+    <text x="844" y="330" fill="#9b8a55" font-size="11" font-weight="700">09</text>
+    <text x="855" y="354" fill="#2c3e7b" font-size="25" font-weight="700">I</text>
+    <rect x="898" y="316" width="56" height="56" rx="10" fill="#1a1a2e"/>
+    <rect x="962" y="316" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="972" y="330" fill="#81879a" font-size="11" font-weight="700">24</text>
+    <text x="983" y="354" fill="#1a1a2e" font-size="25" font-weight="700">M</text>
+
+    <rect x="706" y="380" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="716" y="394" fill="#81879a" font-size="11" font-weight="700">02</text>
+    <text x="727" y="418" fill="#1a1a2e" font-size="25" font-weight="700">G</text>
+    <rect x="770" y="380" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="780" y="394" fill="#81879a" font-size="11" font-weight="700">10</text>
+    <text x="791" y="418" fill="#1a1a2e" font-size="25" font-weight="700">R</text>
+    <rect x="834" y="380" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="844" y="394" fill="#81879a" font-size="11" font-weight="700">17</text>
+    <text x="855" y="418" fill="#1a1a2e" font-size="25" font-weight="700">I</text>
+    <rect x="898" y="380" width="56" height="56" rx="10" fill="#d4e4ff"/>
+    <text x="908" y="394" fill="#7181aa" font-size="11" font-weight="700">20</text>
+    <text x="919" y="418" fill="#1a1a2e" font-size="25" font-weight="700">D</text>
+    <rect x="962" y="380" width="56" height="56" rx="10" fill="#ffffff"/>
+    <text x="972" y="394" fill="#81879a" font-size="11" font-weight="700">16</text>
+    <text x="983" y="418" fill="#1a1a2e" font-size="25" font-weight="700">S</text>
+  </g>
+
+  <text x="694" y="485" fill="#2c3e7b" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="22">No sign-in. Just solve.</text>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "name": "Daily Codeword",
+  "short_name": "Codeword",
+  "description": "Solve a fresh codeword every day in a clean browser-based puzzle with a shared daily grid.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f0f5",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "assets/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
