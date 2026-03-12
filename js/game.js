@@ -27,6 +27,7 @@
   const loadingEl = document.getElementById('loading');
   const gameContainer = document.getElementById('game-container');
   const dateEl = document.getElementById('puzzle-date');
+  const entryInput = document.getElementById('entry-input');
 
   // --- Init ---
   function init() {
@@ -161,11 +162,17 @@
       el.classList.remove('selected', 'same-code');
     });
 
-    if (!selectedCell) return;
+    if (!selectedCell) {
+      hideEntryInput();
+      return;
+    }
 
     const { r, c } = selectedCell;
     const cell = getCellEl(r, c);
-    if (!cell || cell.classList.contains('black')) return;
+    if (!cell || cell.classList.contains('black')) {
+      hideEntryInput();
+      return;
+    }
 
     cell.classList.add('selected');
     const code = cell.dataset.code;
@@ -176,6 +183,8 @@
         if (el !== cell) el.classList.add('same-code');
       });
     }
+
+    syncEntryInputPosition(cell);
   }
 
   function getCellEl(r, c) {
@@ -185,7 +194,8 @@
   // --- Events ---
   function bindEvents() {
     gridEl.addEventListener('click', onGridClick);
-    document.addEventListener('keydown', onKeyDown);
+    entryInput.addEventListener('input', onEntryInput);
+    entryInput.addEventListener('keydown', onEntryKeyDown);
     timerToggle.addEventListener('click', toggleTimer);
     timerReset.addEventListener('click', resetTimer);
     btnCheck.addEventListener('click', checkPuzzle);
@@ -201,72 +211,29 @@
     const c = parseInt(cell.dataset.col);
     selectedCell = { r, c };
     updateHighlights();
+    focusEntryInput();
   }
 
-  function onKeyDown(e) {
-    if (gameComplete) return;
-    if (!selectedCell) return;
+  function onEntryInput() {
+    if (gameComplete || !selectedCell) {
+      entryInput.value = '';
+      return;
+    }
 
-    const cell = getCellEl(selectedCell.r, selectedCell.c);
-    if (!cell || cell.classList.contains('black')) return;
+    const letters = entryInput.value.toUpperCase().replace(/[^A-Z]/g, '');
+    entryInput.value = '';
 
-    const code = parseInt(cell.dataset.code);
+    for (const letter of letters) {
+      handleLetterInput(letter);
+    }
+  }
 
-    if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+  function onEntryKeyDown(e) {
+    if (gameComplete || !selectedCell) return;
+
+    if (e.key === 'Backspace' || e.key === 'Delete') {
       e.preventDefault();
-      const letter = e.key.toUpperCase();
-
-      // Check if this letter is already assigned to a different code
-      const existingCode = Object.entries(userGuesses)
-        .find(([num, l]) => l === letter && parseInt(num) !== code);
-
-      // Check if the target code already has a revealed letter
-      const solutionLetter = puzzle.letterGrid[selectedCell.r][selectedCell.c];
-      if (puzzle.revealedLetters.has(solutionLetter) &&
-          userGuesses[code] === solutionLetter) {
-        // Can't change a revealed letter
-        moveToNextCell();
-        return;
-      }
-
-      if (existingCode) {
-        // Remove the letter from the other code first
-        const otherCode = parseInt(existingCode[0]);
-        // Check if it's a revealed letter
-        const otherSolution = puzzle.numberToLetter[otherCode];
-        if (puzzle.revealedLetters.has(otherSolution) &&
-            userGuesses[otherCode] === otherSolution) {
-          // Can't steal a revealed letter
-          showMessage('That letter is already confirmed for another number.', 'info');
-          setTimeout(() => hideMessage(), 2000);
-          return;
-        }
-        delete userGuesses[otherCode];
-      }
-
-      userGuesses[code] = letter;
-      renderGrid();
-      renderStrip();
-      saveState();
-
-      // Move to next white cell
-      moveToNextCell();
-
-      // Check for completion
-      checkCompletion();
-
-    } else if (e.key === 'Backspace' || e.key === 'Delete') {
-      e.preventDefault();
-      const solutionLetter = puzzle.letterGrid[selectedCell.r][selectedCell.c];
-      if (puzzle.revealedLetters.has(solutionLetter) &&
-          userGuesses[code] === solutionLetter) {
-        return; // Can't delete revealed letters
-      }
-      delete userGuesses[code];
-      renderGrid();
-      renderStrip();
-      saveState();
-
+      handleDeleteInput();
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
       moveSelection(0, 1);
@@ -280,6 +247,111 @@
       e.preventDefault();
       moveSelection(-1, 0);
     }
+  }
+
+  function getSelectedPlayableCell() {
+    if (!selectedCell) return null;
+    const cell = getCellEl(selectedCell.r, selectedCell.c);
+    if (!cell || cell.classList.contains('black')) return null;
+    return cell;
+  }
+
+  function handleLetterInput(letter) {
+    const cell = getSelectedPlayableCell();
+    if (!cell) return;
+
+    const code = parseInt(cell.dataset.code);
+
+    // Check if this letter is already assigned to a different code
+    const existingCode = Object.entries(userGuesses)
+      .find(([num, l]) => l === letter && parseInt(num) !== code);
+
+    // Check if the target code already has a revealed letter
+    const solutionLetter = puzzle.letterGrid[selectedCell.r][selectedCell.c];
+    if (puzzle.revealedLetters.has(solutionLetter) &&
+        userGuesses[code] === solutionLetter) {
+      moveToNextCell();
+      return;
+    }
+
+    if (existingCode) {
+      const otherCode = parseInt(existingCode[0]);
+      const otherSolution = puzzle.numberToLetter[otherCode];
+      if (puzzle.revealedLetters.has(otherSolution) &&
+          userGuesses[otherCode] === otherSolution) {
+        showMessage('That letter is already confirmed for another number.', 'info');
+        setTimeout(() => hideMessage(), 2000);
+        return;
+      }
+      delete userGuesses[otherCode];
+    }
+
+    userGuesses[code] = letter;
+    renderGrid();
+    renderStrip();
+    saveState();
+    moveToNextCell();
+    checkCompletion();
+  }
+
+  function handleDeleteInput() {
+    const cell = getSelectedPlayableCell();
+    if (!cell) return;
+
+    const code = parseInt(cell.dataset.code);
+    const solutionLetter = puzzle.letterGrid[selectedCell.r][selectedCell.c];
+    if (puzzle.revealedLetters.has(solutionLetter) &&
+        userGuesses[code] === solutionLetter) {
+      return;
+    }
+
+    delete userGuesses[code];
+    renderGrid();
+    renderStrip();
+    saveState();
+  }
+
+  function focusEntryInput() {
+    if (!selectedCell || gameComplete) return;
+
+    entryInput.value = '';
+    const selectedEl = getSelectedPlayableCell();
+    if (selectedEl) syncEntryInputPosition(selectedEl);
+    try {
+      entryInput.focus({ preventScroll: true });
+    } catch (e) {
+      entryInput.focus();
+    }
+  }
+
+  function blurEntryInput() {
+    entryInput.blur();
+    entryInput.value = '';
+    hideEntryInput();
+  }
+
+  function syncEntryInputPosition(cell) {
+    if (!cell || gameComplete) {
+      hideEntryInput();
+      return;
+    }
+
+    const rect = cell.getBoundingClientRect();
+    entryInput.style.left = `${rect.left}px`;
+    entryInput.style.top = `${rect.top}px`;
+    entryInput.style.width = `${rect.width}px`;
+    entryInput.style.height = `${rect.height}px`;
+    entryInput.style.opacity = '0.01';
+    entryInput.style.pointerEvents = 'auto';
+  }
+
+  function hideEntryInput() {
+    entryInput.style.left = '0px';
+    entryInput.style.top = '0px';
+    entryInput.style.width = '1px';
+    entryInput.style.height = '1px';
+    entryInput.style.opacity = '0';
+    entryInput.style.pointerEvents = 'none';
   }
 
   function moveToNextCell() {
@@ -410,6 +482,7 @@
     renderGrid();
     renderStrip();
     gameComplete = true;
+    blurEntryInput();
     saveState();
     showMessage('Solution revealed.', 'info');
   }
@@ -446,6 +519,7 @@
   function completePuzzle() {
     gameComplete = true;
     gridEl.classList.add('complete');
+    blurEntryInput();
     showMessage(`Puzzle complete! Time: ${formatTime(timerSeconds)}`, 'success');
     if (timerRunning) toggleTimer();
     saveState();

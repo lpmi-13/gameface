@@ -33,3 +33,11 @@ js/game.js          - Game UI, input handling, timer, persistence
 ## Running
 
 Open `index.html` in a browser. No build step or server required.
+
+## Testing
+
+Run the automated checks with:
+
+```bash
+node --test
+```
