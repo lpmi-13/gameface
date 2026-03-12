@@ -58,6 +58,8 @@ var GRID_TEMPLATES = [
   ]
 ];
 
+const DAILY_THEME_WORD = 'BIRTANEM';
+
 /**
  * Parse a grid template into a 2D array of booleans (true = white cell).
  * Also cleans up: any white cell not part of a 3+ letter run becomes black.
@@ -165,14 +167,25 @@ function getSlotPattern(slot, letterGrid) {
   return slot.cells.map(({ r, c }) => letterGrid[r][c] || '.').join('');
 }
 
+function getSlotIndicesByLength(slots, len) {
+  const indices = [];
+  for (let i = 0; i < slots.length; i++) {
+    if (slots[i].cells.length === len) {
+      indices.push(i);
+    }
+  }
+  return indices;
+}
+
 /**
  * Attempt to fill the grid with valid words using backtracking.
  * Returns the filled letterGrid or null if failed.
  */
-function fillGrid(grid, slots, rng, maxAttempts) {
+function fillGrid(grid, slots, rng, maxAttempts, fixedSlots) {
   const rows = grid.length;
   const cols = grid[0].length;
   const letterGrid = Array.from({ length: rows }, () => Array(cols).fill(null));
+  const assignments = fixedSlots || [];
 
   // Build cell-to-slots mapping
   const cellToSlots = {};
@@ -187,6 +200,38 @@ function fillGrid(grid, slots, rng, maxAttempts) {
   const filledSlots = new Set();
   const usedWords = new Set(); // Prevent duplicate words
   let attempts = 0;
+
+  function applyFixedSlots() {
+    for (const assignment of assignments) {
+      const slot = slots[assignment.slotIdx];
+      if (!slot || slot.cells.length !== assignment.word.length || usedWords.has(assignment.word)) {
+        return false;
+      }
+
+      for (let i = 0; i < slot.cells.length; i++) {
+        const { r, c } = slot.cells[i];
+        const existing = letterGrid[r][c];
+        if (existing && existing !== assignment.word[i]) {
+          return false;
+        }
+        letterGrid[r][c] = assignment.word[i];
+      }
+
+      filledSlots.add(assignment.slotIdx);
+      usedWords.add(assignment.word);
+    }
+
+    for (let i = 0; i < slots.length; i++) {
+      if (filledSlots.has(i)) continue;
+      const pattern = getSlotPattern(slots[i], letterGrid);
+      const candidates = getCandidates(pattern).filter(w => !usedWords.has(w));
+      if (candidates.length === 0) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 
   function getMostConstrainedSlot() {
     let bestIdx = -1;
@@ -266,6 +311,7 @@ function fillGrid(grid, slots, rng, maxAttempts) {
     return false;
   }
 
+  if (!applyFixedSlots()) return null;
   return solve() ? letterGrid : null;
 }
 
@@ -327,22 +373,36 @@ function generatePuzzle(dateStr) {
     const grid = parseTemplate(GRID_TEMPLATES[tIdx]);
     const slots = extractSlots(grid);
     slots.sort((a, b) => b.cells.length - a.cells.length);
+    const themeSlotIndices = getSlotIndicesByLength(slots, DAILY_THEME_WORD.length);
+
+    if (themeSlotIndices.length === 0) continue;
 
     // Try multiple seeds per template
     for (let s = 0; s < 8; s++) {
-      const attemptRng = createRNG(seed + t * 9973 + s * 7919);
-      const letterGrid = fillGrid(grid, slots, attemptRng, 60000);
+      const slotOrder = [...themeSlotIndices];
+      seededShuffle(slotOrder, createRNG(seed + t * 9973 + s * 7919));
 
-      if (letterGrid) {
-        const letterToNumber = assignCodeNumbers(letterGrid, rng);
-        const numberToLetter = {};
-        for (const [letter, num] of Object.entries(letterToNumber)) {
-          numberToLetter[num] = letter;
+      for (const slotIdx of slotOrder) {
+        const attemptRng = createRNG(seed + t * 9973 + s * 7919 + slotIdx * 101);
+        const letterGrid = fillGrid(
+          grid,
+          slots,
+          attemptRng,
+          60000,
+          [{ slotIdx, word: DAILY_THEME_WORD }]
+        );
+
+        if (letterGrid) {
+          const letterToNumber = assignCodeNumbers(letterGrid, rng);
+          const numberToLetter = {};
+          for (const [letter, num] of Object.entries(letterToNumber)) {
+            numberToLetter[num] = letter;
+          }
+
+          const revealedLetters = chooseRevealedLetters(letterGrid, letterToNumber, rng);
+
+          return { grid, letterGrid, slots, letterToNumber, numberToLetter, revealedLetters };
         }
-
-        const revealedLetters = chooseRevealedLetters(letterGrid, letterToNumber, rng);
-
-        return { grid, letterGrid, slots, letterToNumber, numberToLetter, revealedLetters };
       }
     }
   }

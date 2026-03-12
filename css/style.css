@@ -258,31 +258,6 @@ header h1 {
   color: #1565c0;
 }
 
-/* Instructions */
-.instructions {
-  margin-top: 8px;
-}
-
-.instructions details {
-  background: var(--white);
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 10px 14px;
-}
-
-.instructions summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--primary);
-}
-
-.instructions p {
-  margin-top: 8px;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: #555;
-}
-
 /* Responsive */
 @media (max-width: 520px) {
   :root {

@@ -374,7 +374,7 @@ var WORD_LIST_RAW = [
   "advanced","advocate","affected","airplane","alliance","although","aluminum","ambition","analytic",
   "ancestor","announce","anything","anywhere","apparent","appetite","applause","approach","approval",
   "argument","artifact","assembly","aviation","backbone","bachelor","backdrop","backward","bacteria",
-  "balanced","bankrupt","baseline","bathroom","becoming","behavior","benedict","birthday","biscuit",
+  "balanced","bankrupt","baseline","bathroom","becoming","behavior","benedict","birtanem","birthday","biscuit",
   "boldness","bookmark","boundary","bracelet","brochure","building","bulletin","business","butchery",
   "calendar","campaign","capacity","cardigan","cashmere","casualty","catching","category","cautious",
   "ceremony","champion","chaplain","chapters","chemical","children","chimeral","christen","circular",
