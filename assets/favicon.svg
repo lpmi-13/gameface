@@ -1,16 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
   <title id="title">Daily Codeword favicon</title>
-  <rect x="4" y="4" width="56" height="56" rx="16" fill="#1a1a2e" stroke="#e8c547" stroke-width="2"/>
-  <rect x="10" y="10" width="12" height="12" rx="3" fill="#e8c547"/>
-  <rect x="24" y="10" width="12" height="12" rx="3" fill="#ffffff"/>
-  <rect x="38" y="10" width="12" height="12" rx="3" fill="#0f1324"/>
-  <rect x="10" y="24" width="12" height="12" rx="3" fill="#ffffff"/>
-  <rect x="24" y="24" width="12" height="12" rx="3" fill="#ffffff"/>
-  <rect x="38" y="24" width="12" height="12" rx="3" fill="#ffffff"/>
-  <rect x="10" y="38" width="12" height="12" rx="3" fill="#0f1324"/>
-  <rect x="24" y="38" width="12" height="12" rx="3" fill="#ffffff"/>
-  <rect x="38" y="38" width="12" height="12" rx="3" fill="#ffffff"/>
-  <text x="13" y="18" fill="#1a1a2e" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="7" font-weight="700">7</text>
-  <text x="27.2" y="33.1" fill="#1a1a2e" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="9" font-weight="700">C</text>
-  <text x="40.5" y="47.1" fill="#1a1a2e" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="9" font-weight="700">W</text>
+  <defs>
+    <path id="heart-shape" d="M32 57C30.5 57 29.1 56.5 27.8 55.5C17.2 47.8 9 40.8 9 28.7C9 20.6 15 14.5 22.7 14.5C27 14.5 30.4 16.4 32 19.8C33.6 16.4 37 14.5 41.3 14.5C49 14.5 55 20.6 55 28.7C55 40.8 46.8 47.8 36.2 55.5C34.9 56.5 33.5 57 32 57Z"/>
+  </defs>
+
+  <use href="#heart-shape" fill="#1a1a2e"/>
+  <rect x="22" y="21" width="20" height="20" rx="5.25" fill="#ffffff"/>
+  <text x="32" y="35.7" fill="#1a1a2e" font-family="DejaVu Sans, Segoe UI, sans-serif" font-size="13.7" font-weight="700" text-anchor="middle">B</text>
 </svg>
