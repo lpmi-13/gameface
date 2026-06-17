@@ -7,54 +7,64 @@
  * 3. Date-seeded random number generation for daily puzzles
  */
 
-// Grid templates: 13x13, 1 = white cell, 0 = black cell
-// All templates have 180-degree rotational symmetry.
-// Every white cell is part of at least one 3+ letter run (across or down).
+// Grid templates: 13x13, 1 = white cell, 0 = black cell.
+//
+// Invariants (enforced at runtime by isCleanGrid and by the regression tests in
+// tests/generator.test.js):
+//   - 180-degree rotational symmetry.
+//   - Every white cell belongs to at least one across/down run of 3+ cells.
+//   - No maximal run is exactly 2 cells long. A 2-cell run is never long enough
+//     to become a word slot (slots require 3+ cells), so its two letters would
+//     be dictated entirely by the crossing words and almost always spell a
+//     non-word. Forbidding 2-cell runs is what keeps stray 2-letter "words" out
+//     of generated puzzles.
+//   - No maximal run is longer than 8 cells: the dictionary has no 9+ letter
+//     words, so a longer slot could never be filled.
 var GRID_TEMPLATES = [
   [
     "1111011101111",
-    "1110111011101",
-    "1101110111011",
-    "0111011101110",
-    "1101110111011",
-    "1110111011101",
-    "1111011101111",
-    "1011101110111",
-    "1101110111011",
-    "0111011101110",
-    "1101110111011",
-    "1011101110111",
+    "1010111010001",
+    "1111011111101",
+    "0111010011100",
+    "0101010111111",
+    "1010111010101",
+    "1111010101111",
+    "1010101110101",
+    "1111110101010",
+    "0011100101110",
+    "1011111101111",
+    "1000101110101",
     "1111011101111"
   ],
   [
-    "1110111011101",
-    "1101110111011",
-    "1111011101111",
-    "0110111011010",
-    "1111011101111",
-    "1101110111011",
-    "1110101010111",
-    "1101110111011",
-    "1111011101111",
-    "0101011101100",
-    "1111011101111",
-    "1101110111011",
-    "1011101110111"
+    "1110111011100",
+    "0111011101010",
+    "1110011111111",
+    "0011110101010",
+    "1110011101111",
+    "1001110111010",
+    "1110100010111",
+    "0101110111001",
+    "1111011100111",
+    "0101010111100",
+    "1111111100111",
+    "0101011101110",
+    "0011101110111"
   ],
   [
-    "1111011101111",
-    "1101110111011",
-    "1110111011101",
-    "0111011101110",
-    "1110111011101",
-    "1101110111011",
-    "1011101011101",
-    "1101110111011",
-    "1011101110111",
-    "0111011101110",
-    "1011101110111",
-    "1101110111011",
-    "1111011101111"
+    "1110011111111",
+    "1001111101010",
+    "1010011111111",
+    "0111010111110",
+    "1110111010101",
+    "1111010111001",
+    "1111000001111",
+    "1001110101111",
+    "1010101110111",
+    "0111110101110",
+    "1111111100101",
+    "0101011111001",
+    "1111111100111"
   ]
 ];
 
@@ -115,56 +125,80 @@ function parseTemplate(template) {
 }
 
 /**
- * Extract all word slots (horizontal and vertical) from a grid.
- * Each slot is { cells: [{r, c}, ...], direction: 'across'|'down' }
+ * Find every maximal run of white cells (horizontal and vertical), regardless
+ * of length. A run of length 1 is a single white cell that only crosses a word
+ * in the perpendicular direction.
+ * Each run is { cells: [{r, c}, ...], direction: 'across'|'down' }.
+ *
+ * Works on both the boolean template grid and a filled letterGrid (where a cell
+ * holds a letter string for white and null/undefined for black).
  */
-function extractSlots(grid) {
+function getMaximalRuns(grid) {
   const rows = grid.length;
   const cols = grid[0].length;
-  const slots = [];
+  const runs = [];
 
-  // Horizontal slots
   for (let r = 0; r < rows; r++) {
     let start = -1;
     for (let c = 0; c <= cols; c++) {
       if (c < cols && grid[r][c]) {
         if (start === -1) start = c;
       } else {
-        if (start !== -1 && c - start >= 3) {
+        if (start !== -1) {
           const cells = [];
           for (let k = start; k < c; k++) cells.push({ r, c: k });
-          slots.push({ cells, direction: 'across' });
+          runs.push({ cells, direction: 'across' });
         }
         start = -1;
       }
     }
   }
 
-  // Vertical slots
   for (let c = 0; c < cols; c++) {
     let start = -1;
     for (let r = 0; r <= rows; r++) {
       if (r < rows && grid[r][c]) {
         if (start === -1) start = r;
       } else {
-        if (start !== -1 && r - start >= 3) {
+        if (start !== -1) {
           const cells = [];
           for (let k = start; k < r; k++) cells.push({ r: k, c });
-          slots.push({ cells, direction: 'down' });
+          runs.push({ cells, direction: 'down' });
         }
         start = -1;
       }
     }
   }
 
-  return slots;
+  return runs;
 }
 
 /**
- * Build a pattern string for a slot given current grid state.
+ * Extract all word slots (horizontal and vertical) from a grid.
+ * A slot is a maximal run of 3+ cells (a run of 2 is never a valid word, and a
+ * run of 1 is just a crossing cell), so only runs of length >= 3 become slots.
+ * Each slot is { cells: [{r, c}, ...], direction: 'across'|'down' }.
  */
-function getSlotPattern(slot, letterGrid) {
-  return slot.cells.map(({ r, c }) => letterGrid[r][c] || '.').join('');
+function extractSlots(grid) {
+  return getMaximalRuns(grid).filter(run => run.cells.length >= 3);
+}
+
+/**
+ * A grid is "clean" when every maximal run is something we can actually fill
+ * with a real word: no 2-cell runs (which would surface as 2-letter non-words)
+ * and no runs longer than the longest available dictionary word (8). Single
+ * cells are fine (they are crossed by a word the other way).
+ *
+ * This is a defensive runtime guard: a malformed template is skipped rather than
+ * allowed to emit garbage, so the 2-letter-word bug can never reach players even
+ * if a future template slips through review.
+ */
+function isCleanGrid(grid) {
+  for (const run of getMaximalRuns(grid)) {
+    const len = run.cells.length;
+    if (len === 2 || len > 8) return false;
+  }
+  return true;
 }
 
 function getSlotIndicesByLength(slots, len) {
@@ -177,142 +211,166 @@ function getSlotIndicesByLength(slots, len) {
   return indices;
 }
 
+// Cap on search nodes per fill attempt. A clean (fully interlocked) grid is a
+// tightly coupled CSP; rather than letting one attempt backtrack forever, we
+// bail after this many nodes and let generatePuzzle restart with a fresh
+// candidate order. Random restarts find a fill far faster than deep search.
+var MAX_FILL_STEPS = 10000;
+
 /**
- * Attempt to fill the grid with valid words using backtracking.
- * Returns the filled letterGrid or null if failed.
+ * Attempt to fill the grid with valid words using backtracking with forward
+ * checking. Each slot keeps a live domain of candidate words; assigning a word
+ * immediately filters the domains of the crossing slots, and an emptied domain
+ * triggers a backtrack before we ever descend into it.
+ *
+ * This is much faster and more reliable than re-scanning the whole word list at
+ * every node, which matters because the grids are now fully clean (no 2-cell
+ * runs): those extra crossing constraints make naive backtracking thrash for
+ * tens of seconds on some dates.
+ *
+ * `fixedSlots` is an optional list of { slotIdx, word } seeded before the search
+ * (used to force the daily theme word). Returns the filled letterGrid, or null
+ * if no fill was found within the step budget.
  */
-function fillGrid(grid, slots, rng, maxAttempts, fixedSlots) {
+function fillGrid(grid, slots, rng, fixedSlots) {
   const rows = grid.length;
   const cols = grid[0].length;
-  const letterGrid = Array.from({ length: rows }, () => Array(cols).fill(null));
-  const assignments = fixedSlots || [];
+  const n = slots.length;
 
-  // Build cell-to-slots mapping
-  const cellToSlots = {};
-  for (let i = 0; i < slots.length; i++) {
-    for (const { r, c } of slots[i].cells) {
-      const key = `${r},${c}`;
-      if (!cellToSlots[key]) cellToSlots[key] = [];
-      cellToSlots[key].push(i);
+  // For each slot position, find the crossing slot/position that shares the cell.
+  const cellOccupants = {};
+  for (let i = 0; i < n; i++) {
+    const cells = slots[i].cells;
+    for (let p = 0; p < cells.length; p++) {
+      const key = cells[p].r * 100 + cells[p].c; // r, c < 13 so this key is unique
+      (cellOccupants[key] || (cellOccupants[key] = [])).push({ slot: i, pos: p });
+    }
+  }
+  const crossings = Array.from({ length: n }, () => []);
+  for (const key in cellOccupants) {
+    const occupants = cellOccupants[key];
+    for (const a of occupants) {
+      for (const b of occupants) {
+        if (a.slot !== b.slot) {
+          crossings[a.slot].push({ pos: a.pos, other: b.slot, otherPos: b.pos });
+        }
+      }
     }
   }
 
-  const filledSlots = new Set();
-  const usedWords = new Set(); // Prevent duplicate words
-  let attempts = 0;
+  // domain[i] = candidate words still consistent with the assignments so far.
+  const domain = new Array(n);
+  for (let i = 0; i < n; i++) {
+    domain[i] = getWordsOfLength(slots[i].cells.length).slice();
+    if (domain[i].length === 0) return null; // a slot length with no dictionary words
+  }
 
-  function applyFixedSlots() {
-    for (const assignment of assignments) {
-      const slot = slots[assignment.slotIdx];
-      if (!slot || slot.cells.length !== assignment.word.length || usedWords.has(assignment.word)) {
-        return false;
-      }
+  const assigned = new Array(n).fill(null);
+  const usedWords = new Set(); // prevent duplicate words across slots
 
-      for (let i = 0; i < slot.cells.length; i++) {
-        const { r, c } = slot.cells[i];
-        const existing = letterGrid[r][c];
-        if (existing && existing !== assignment.word[i]) {
-          return false;
-        }
-        letterGrid[r][c] = assignment.word[i];
-      }
-
-      filledSlots.add(assignment.slotIdx);
-      usedWords.add(assignment.word);
+  // Restrict a crossing slot's domain to words with `letter` at `pos`,
+  // returning the removed words so the change can be undone on backtrack.
+  function restrict(slot, pos, letter) {
+    const current = domain[slot];
+    const kept = [];
+    const removed = [];
+    for (const word of current) {
+      if (word[pos] === letter) kept.push(word);
+      else removed.push(word);
     }
+    domain[slot] = kept;
+    return removed;
+  }
 
-    for (let i = 0; i < slots.length; i++) {
-      if (filledSlots.has(i)) continue;
-      const pattern = getSlotPattern(slots[i], letterGrid);
-      const candidates = getCandidates(pattern).filter(w => !usedWords.has(w));
-      if (candidates.length === 0) {
-        return false;
-      }
+  // Permanently place a seed word and propagate to its crossings.
+  function placeFixed(slotIdx, word) {
+    if (!slots[slotIdx] || slots[slotIdx].cells.length !== word.length || usedWords.has(word)) {
+      return false;
     }
-
+    assigned[slotIdx] = word;
+    usedWords.add(word);
+    domain[slotIdx] = [word];
+    for (const { pos, other, otherPos } of crossings[slotIdx]) {
+      if (assigned[other]) {
+        if (assigned[other][otherPos] !== word[pos]) return false;
+        continue;
+      }
+      restrict(other, otherPos, word[pos]);
+      if (domain[other].length === 0) return false;
+    }
     return true;
   }
 
-  function getMostConstrainedSlot() {
-    let bestIdx = -1;
-    let bestCount = Infinity;
-
-    for (let i = 0; i < slots.length; i++) {
-      if (filledSlots.has(i)) continue;
-      const pattern = getSlotPattern(slots[i], letterGrid);
-      const candidates = getCandidates(pattern).filter(w => !usedWords.has(w));
-      if (candidates.length === 0) return { idx: i, count: 0 };
-      if (candidates.length < bestCount) {
-        bestCount = candidates.length;
-        bestIdx = i;
-      }
-    }
-
-    return { idx: bestIdx, count: bestCount };
+  for (const { slotIdx, word } of (fixedSlots || [])) {
+    if (!placeFixed(slotIdx, word)) return null;
   }
 
-  function solve() {
-    attempts++;
-    if (attempts > maxAttempts) return false;
-    if (filledSlots.size === slots.length) return true;
+  let steps = 0;
 
-    const { idx, count } = getMostConstrainedSlot();
-    if (idx === -1) return true;
-    if (count === 0) return false;
+  function solve(numAssigned) {
+    if (numAssigned === n) return true;
+    if (++steps > MAX_FILL_STEPS) return false;
 
-    const slot = slots[idx];
-    const pattern = getSlotPattern(slot, letterGrid);
-    let candidates = getCandidates(pattern).filter(w => !usedWords.has(w));
+    // Most-constrained-variable heuristic: smallest remaining domain.
+    let best = -1;
+    let bestSize = Infinity;
+    for (let i = 0; i < n; i++) {
+      if (assigned[i]) continue;
+      const size = domain[i].length;
+      if (size < bestSize) {
+        bestSize = size;
+        best = i;
+        if (size <= 1) break;
+      }
+    }
+    if (best === -1) return true;
+    if (bestSize === 0) return false;
 
+    let candidates = domain[best].filter(w => !usedWords.has(w));
     seededShuffle(candidates, rng);
-    if (candidates.length > 25) candidates = candidates.slice(0, 25);
+    if (candidates.length > 15) candidates = candidates.slice(0, 15);
 
+    const cross = crossings[best];
     for (const word of candidates) {
-      // Place letters
-      const saved = [];
-      for (let i = 0; i < slot.cells.length; i++) {
-        const { r, c } = slot.cells[i];
-        saved.push(letterGrid[r][c]);
-        letterGrid[r][c] = word[i];
-      }
+      assigned[best] = word;
+      usedWords.add(word);
+      const savedDomain = domain[best];
+      domain[best] = [word];
 
-      // Check crossing slots still have candidates
-      let crossingsOk = true;
-      for (const { r, c } of slot.cells) {
-        const key = `${r},${c}`;
-        for (const crossIdx of (cellToSlots[key] || [])) {
-          if (crossIdx === idx || filledSlots.has(crossIdx)) continue;
-          const crossPattern = getSlotPattern(slots[crossIdx], letterGrid);
-          if (getCandidates(crossPattern).filter(w => !usedWords.has(w)).length === 0) {
-            crossingsOk = false;
-            break;
-          }
+      const undo = [];
+      let ok = true;
+      for (const { pos, other, otherPos } of cross) {
+        if (assigned[other]) continue;
+        const removed = restrict(other, otherPos, word[pos]);
+        undo.push({ slot: other, removed });
+        if (domain[other].length === 0) {
+          ok = false;
+          break;
         }
-        if (!crossingsOk) break;
       }
 
-      if (crossingsOk) {
-        filledSlots.add(idx);
-        usedWords.add(word);
+      if (ok && solve(numAssigned + 1)) return true;
 
-        if (solve()) return true;
-
-        filledSlots.delete(idx);
-        usedWords.delete(word);
-      }
-
-      // Restore
-      for (let i = 0; i < slot.cells.length; i++) {
-        const { r, c } = slot.cells[i];
-        letterGrid[r][c] = saved[i];
-      }
+      for (const u of undo) domain[u.slot] = domain[u.slot].concat(u.removed);
+      domain[best] = savedDomain;
+      assigned[best] = null;
+      usedWords.delete(word);
     }
 
     return false;
   }
 
-  if (!applyFixedSlots()) return null;
-  return solve() ? letterGrid : null;
+  if (!solve(usedWords.size)) return null;
+
+  const letterGrid = Array.from({ length: rows }, () => Array(cols).fill(null));
+  for (let i = 0; i < n; i++) {
+    const word = assigned[i];
+    const cells = slots[i].cells;
+    for (let p = 0; p < cells.length; p++) {
+      letterGrid[cells[p].r][cells[p].c] = word[p];
+    }
+  }
+  return letterGrid;
 }
 
 /**
@@ -371,14 +429,20 @@ function generatePuzzle(dateStr) {
   for (let t = 0; t < GRID_TEMPLATES.length; t++) {
     const tIdx = (templateIdx + t) % GRID_TEMPLATES.length;
     const grid = parseTemplate(GRID_TEMPLATES[tIdx]);
+
+    // Defensive guard: never fill a grid that would surface 2-letter non-words
+    // (or unfillable over-long runs). Clean templates pass; a malformed one is
+    // skipped rather than handed to players.
+    if (!isCleanGrid(grid)) continue;
+
     const slots = extractSlots(grid);
     slots.sort((a, b) => b.cells.length - a.cells.length);
     const themeSlotIndices = getSlotIndicesByLength(slots, DAILY_THEME_WORD.length);
 
     if (themeSlotIndices.length === 0) continue;
 
-    // Try multiple seeds per template
-    for (let s = 0; s < 8; s++) {
+    // Try multiple randomized restarts per template.
+    for (let s = 0; s < 40; s++) {
       const slotOrder = [...themeSlotIndices];
       seededShuffle(slotOrder, createRNG(seed + t * 9973 + s * 7919));
 
@@ -388,7 +452,6 @@ function generatePuzzle(dateStr) {
           grid,
           slots,
           attemptRng,
-          60000,
           [{ slotIdx, word: DAILY_THEME_WORD }]
         );
 
