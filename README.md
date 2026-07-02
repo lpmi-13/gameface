@@ -26,7 +26,7 @@ js/game.js          - Game UI, input handling, timer, persistence
 ### Puzzle Generation
 
 1. A grid template (13x13 with symmetric black/white pattern) is selected based on the date
-2. Word slots are extracted and filled using a backtracking algorithm with constraint propagation
+2. Word slots are extracted and filled using a backtracking algorithm with constraint propagation. The fill is biased toward words that introduce still-missing letters (weighted by scarcity, so rare letters like Q/J/X/Z are prioritized), and a fill is only accepted once the grid uses **all 26 letters** — a proper codeword is a pangram, so every number 1-26 appears in the grid and can be deduced.
 3. Code numbers (1-26) are assigned to letters via a shuffled mapping
 4. Three letters are revealed as starting hints
 
