@@ -143,3 +143,50 @@ test('the reported June 14 2026 puzzle has no 2-letter non-words', () => {
   assert.equal(twoLetterEntries.length, 0,
     `expected no 2-letter entries but found: ${twoLetterEntries.join(', ')}`);
 });
+
+// --- Codeword pangram guarantee ---
+//
+// A codeword replaces each of the 26 letters with a distinct number 1-26. If a
+// puzzle omitted a letter, that number would never appear in the grid and could
+// never be deduced, and the A-Z letter strip would keep a permanent blank. Every
+// generated grid must therefore use all 26 letters.
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+function missingLetters(puzzle) {
+  const present = new Set();
+  for (const row of puzzle.letterGrid) {
+    for (const cell of row) {
+      if (cell) present.add(cell);
+    }
+  }
+  return ALPHABET.filter(letter => !present.has(letter));
+}
+
+test('isPangram is true only when all 26 letters are present', () => {
+  const sandbox = loadGeneratorContext();
+  const full = ALPHABET.map(letter => [letter]);
+  assert.equal(sandbox.isPangram(full), true);
+
+  const short = full.slice();
+  short[0] = [null]; // drop the "A"
+  assert.equal(sandbox.isPangram(short), false);
+});
+
+test('every generated puzzle uses all 26 letters (valid codeword)',
+  { timeout: 120000 }, () => {
+    const sandbox = loadGeneratorContext();
+    const allMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    for (const dateStr of eachDayOf(2026, allMonths)) {
+      const puzzle = sandbox.generatePuzzle(dateStr);
+      assert.deepEqual(missingLetters(puzzle), [],
+        `${dateStr} is missing letters: ${missingLetters(puzzle).join(', ')}`);
+    }
+  });
+
+test('a date that previously dropped many letters is now a pangram', () => {
+  const sandbox = loadGeneratorContext();
+  // 2025-03-15 used to omit F, J, K, Q, V, X and Z.
+  const puzzle = sandbox.generatePuzzle('2025-03-15');
+  assert.deepEqual(missingLetters(puzzle), []);
+});

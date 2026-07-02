@@ -201,6 +201,21 @@ function isCleanGrid(grid) {
   return true;
 }
 
+/**
+ * A finished grid is a valid codeword only if it is a pangram: every one of the
+ * 26 letters appears at least once, so all 26 code numbers are actually used and
+ * deducible. Returns true when the filled letterGrid uses all 26 letters.
+ */
+function isPangram(letterGrid) {
+  const seen = new Set();
+  for (const row of letterGrid) {
+    for (const cell of row) {
+      if (cell) seen.add(cell);
+    }
+  }
+  return seen.size === 26;
+}
+
 function getSlotIndicesByLength(slots, len) {
   const indices = [];
   for (let i = 0; i < slots.length; i++) {
@@ -216,6 +231,37 @@ function getSlotIndicesByLength(slots, len) {
 // bail after this many nodes and let generatePuzzle restart with a fresh
 // candidate order. Random restarts find a fill far faster than deep search.
 var MAX_FILL_STEPS = 10000;
+
+// Per-letter weight used to steer the fill toward a grid that uses every letter
+// (a proper codeword is a pangram: all 26 numbers appear). Weight is an inverse
+// document frequency over the dictionary, so scarce letters (Q, J, X, Z) weigh
+// far more than common ones and a word that supplies a missing rare letter is
+// preferred over one that supplies several common letters. Memoized on first use.
+var LETTER_WEIGHTS = null;
+function getLetterWeights() {
+  if (LETTER_WEIGHTS) return LETTER_WEIGHTS;
+  const containing = new Array(26).fill(0);
+  let total = 0;
+  for (let len = 3; len <= 8; len++) {
+    for (const word of getWordsOfLength(len)) {
+      total++;
+      let seen = 0;
+      for (let k = 0; k < word.length; k++) {
+        const idx = word.charCodeAt(k) - 65;
+        const bit = 1 << idx;
+        if ((seen & bit) === 0) {
+          seen |= bit;
+          containing[idx]++;
+        }
+      }
+    }
+  }
+  LETTER_WEIGHTS = new Array(26);
+  for (let i = 0; i < 26; i++) {
+    LETTER_WEIGHTS[i] = total / (containing[i] + 1);
+  }
+  return LETTER_WEIGHTS;
+}
 
 /**
  * Attempt to fill the grid with valid words using backtracking with forward
@@ -236,6 +282,7 @@ function fillGrid(grid, slots, rng, fixedSlots) {
   const rows = grid.length;
   const cols = grid[0].length;
   const n = slots.length;
+  const weights = getLetterWeights();
 
   // For each slot position, find the crossing slot/position that shares the cell.
   const cellOccupants = {};
@@ -268,6 +315,38 @@ function fillGrid(grid, slots, rng, fixedSlots) {
   const assigned = new Array(n).fill(null);
   const usedWords = new Set(); // prevent duplicate words across slots
 
+  // Live count of how many times each letter (A-Z) is currently placed, so the
+  // search can prefer candidates that introduce still-missing letters and drive
+  // the finished grid to a full pangram.
+  const letterUse = new Array(26).fill(0);
+  let missingLetters = 26;
+  function addWordLetters(word) {
+    for (let k = 0; k < word.length; k++) {
+      const idx = word.charCodeAt(k) - 65;
+      if (letterUse[idx]++ === 0) missingLetters--;
+    }
+  }
+  function removeWordLetters(word) {
+    for (let k = 0; k < word.length; k++) {
+      const idx = word.charCodeAt(k) - 65;
+      if (--letterUse[idx] === 0) missingLetters++;
+    }
+  }
+  // Weighted count of the distinct still-missing letters a word would introduce.
+  function newLetterScore(word) {
+    let score = 0;
+    let seen = 0; // bitmask of letters already scored within this word
+    for (let k = 0; k < word.length; k++) {
+      const idx = word.charCodeAt(k) - 65;
+      const bit = 1 << idx;
+      if (letterUse[idx] === 0 && (seen & bit) === 0) {
+        score += weights[idx];
+        seen |= bit;
+      }
+    }
+    return score;
+  }
+
   // Restrict a crossing slot's domain to words with `letter` at `pos`,
   // returning the removed words so the change can be undone on backtrack.
   function restrict(slot, pos, letter) {
@@ -289,6 +368,7 @@ function fillGrid(grid, slots, rng, fixedSlots) {
     }
     assigned[slotIdx] = word;
     usedWords.add(word);
+    addWordLetters(word);
     domain[slotIdx] = [word];
     for (const { pos, other, otherPos } of crossings[slotIdx]) {
       if (assigned[other]) {
@@ -328,12 +408,20 @@ function fillGrid(grid, slots, rng, fixedSlots) {
 
     let candidates = domain[best].filter(w => !usedWords.has(w));
     seededShuffle(candidates, rng);
+    // Prefer candidates that supply still-missing letters (weighted by scarcity)
+    // so the completed grid covers all 26 letters. seededShuffle first keeps the
+    // choice among equally-scoring words varied and deterministic; the sort is
+    // stable so that ordering survives within each score tier.
+    if (missingLetters > 0) {
+      candidates.sort((a, b) => newLetterScore(b) - newLetterScore(a));
+    }
     if (candidates.length > 15) candidates = candidates.slice(0, 15);
 
     const cross = crossings[best];
     for (const word of candidates) {
       assigned[best] = word;
       usedWords.add(word);
+      addWordLetters(word);
       const savedDomain = domain[best];
       domain[best] = [word];
 
@@ -355,6 +443,7 @@ function fillGrid(grid, slots, rng, fixedSlots) {
       domain[best] = savedDomain;
       assigned[best] = null;
       usedWords.delete(word);
+      removeWordLetters(word);
     }
 
     return false;
@@ -455,7 +544,10 @@ function generatePuzzle(dateStr) {
           [{ slotIdx, word: DAILY_THEME_WORD }]
         );
 
-        if (letterGrid) {
+        // Only accept a fill that uses all 26 letters. The coverage-biased fill
+        // usually lands a pangram on the first attempt; when it doesn't, the
+        // surrounding restart loop tries again until one does.
+        if (letterGrid && isPangram(letterGrid)) {
           const letterToNumber = assignCodeNumbers(letterGrid, rng);
           const numberToLetter = {};
           for (const [letter, num] of Object.entries(letterToNumber)) {
