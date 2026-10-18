@@ -374,9 +374,10 @@ function createGameDocument() {
   const timer = append(toolbar, 'div', { className: 'timer' });
   append(timer, 'span', { id: 'timer-display', textContent: '00:00' });
   append(timer, 'button', { id: 'timer-toggle', textContent: 'Start' });
-  append(timer, 'button', { id: 'timer-reset', textContent: 'Reset' });
 
   const actions = append(toolbar, 'div', { className: 'actions' });
+  append(actions, 'button', { id: 'btn-undo', textContent: 'Undo' });
+  append(actions, 'button', { id: 'btn-reset', textContent: 'Reset' });
   append(actions, 'button', { id: 'btn-check', textContent: 'Check' });
   append(actions, 'button', { id: 'btn-reveal-letter', textContent: 'Reveal Letter' });
   append(actions, 'button', { id: 'btn-reveal-all', textContent: 'Solution' });

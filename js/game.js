@@ -13,13 +13,16 @@
   let timerSeconds = 0;
   let timerRunning = false;
   let gameComplete = false;
+  let initialRevealedLetters = null; // letters revealed at the start of the puzzle
+  let history = []; // snapshots of game state for undo
 
   // --- DOM refs ---
   const gridEl = document.getElementById('grid');
   const stripEl = document.getElementById('letter-strip');
   const timerDisplay = document.getElementById('timer-display');
   const timerToggle = document.getElementById('timer-toggle');
-  const timerReset = document.getElementById('timer-reset');
+  const btnUndo = document.getElementById('btn-undo');
+  const btnReset = document.getElementById('btn-reset');
   const btnCheck = document.getElementById('btn-check');
   const btnRevealLetter = document.getElementById('btn-reveal-letter');
   const btnRevealAll = document.getElementById('btn-reveal-all');
@@ -49,17 +52,14 @@
       return;
     }
 
+    initialRevealedLetters = new Set(puzzle.revealedLetters);
+
     if (savedState && savedState.dateStr === dateStr) {
       userGuesses = savedState.userGuesses || {};
       timerSeconds = savedState.timerSeconds || 0;
       gameComplete = savedState.gameComplete || false;
     } else {
-      // Initialize with revealed letters
-      userGuesses = {};
-      for (const letter of puzzle.revealedLetters) {
-        const num = puzzle.letterToNumber[letter];
-        userGuesses[num] = letter;
-      }
+      userGuesses = getStartingGuesses();
       timerSeconds = 0;
       gameComplete = false;
     }
@@ -70,6 +70,7 @@
     renderGrid();
     renderStrip();
     updateTimerDisplay();
+    updateUndoButton();
     bindEvents();
 
     if (gameComplete) {
@@ -197,7 +198,8 @@
     entryInput.addEventListener('input', onEntryInput);
     entryInput.addEventListener('keydown', onEntryKeyDown);
     timerToggle.addEventListener('click', toggleTimer);
-    timerReset.addEventListener('click', resetTimer);
+    btnUndo.addEventListener('click', undo);
+    btnReset.addEventListener('click', resetPuzzle);
     btnCheck.addEventListener('click', checkPuzzle);
     btnRevealLetter.addEventListener('click', revealOneLetter);
     btnRevealAll.addEventListener('click', revealAll);
@@ -283,9 +285,15 @@
         setTimeout(() => hideMessage(), 2000);
         return;
       }
-      delete userGuesses[otherCode];
     }
 
+    if (userGuesses[code] === letter) {
+      moveToNextCell();
+      return;
+    }
+
+    pushHistory();
+    if (existingCode) delete userGuesses[parseInt(existingCode[0])];
     userGuesses[code] = letter;
     renderGrid();
     renderStrip();
@@ -304,7 +312,9 @@
         userGuesses[code] === solutionLetter) {
       return;
     }
+    if (!userGuesses[code]) return;
 
+    pushHistory();
     delete userGuesses[code];
     renderGrid();
     renderStrip();
@@ -459,6 +469,7 @@
     // Pick a random one
     const num = unguessed[Math.floor(Math.random() * unguessed.length)];
     const letter = puzzle.numberToLetter[num];
+    pushHistory();
     userGuesses[num] = letter;
     puzzle.revealedLetters.add(letter);
 
@@ -472,6 +483,8 @@
     if (gameComplete) return;
 
     if (!confirm('Are you sure you want to see the solution?')) return;
+
+    pushHistory();
 
     for (let num = 1; num <= 26; num++) {
       if (puzzle.numberToLetter[num]) {
@@ -523,6 +536,68 @@
     showMessage(`Puzzle complete! Time: ${formatTime(timerSeconds)}`, 'success');
     if (timerRunning) toggleTimer();
     saveState();
+  }
+
+  // --- Undo / reset ---
+  function getStartingGuesses() {
+    const guesses = {};
+    for (const letter of initialRevealedLetters) {
+      guesses[puzzle.letterToNumber[letter]] = letter;
+    }
+    return guesses;
+  }
+
+  function snapshot() {
+    return {
+      userGuesses: { ...userGuesses },
+      revealedLetters: new Set(puzzle.revealedLetters),
+      gameComplete
+    };
+  }
+
+  function pushHistory() {
+    history.push(snapshot());
+    updateUndoButton();
+  }
+
+  function restoreSnapshot(state) {
+    userGuesses = state.userGuesses;
+    puzzle.revealedLetters = state.revealedLetters;
+    gameComplete = state.gameComplete;
+
+    if (gameComplete) {
+      gridEl.classList.add('complete');
+      blurEntryInput();
+    } else {
+      gridEl.classList.remove('complete');
+    }
+
+    hideMessage();
+    renderGrid();
+    renderStrip();
+    saveState();
+    updateUndoButton();
+  }
+
+  function undo() {
+    if (history.length === 0) return;
+    restoreSnapshot(history.pop());
+  }
+
+  function resetPuzzle() {
+    if (!confirm('Reset the puzzle to its starting state?')) return;
+
+    pushHistory();
+    resetTimer();
+    restoreSnapshot({
+      userGuesses: getStartingGuesses(),
+      revealedLetters: new Set(initialRevealedLetters),
+      gameComplete: false
+    });
+  }
+
+  function updateUndoButton() {
+    btnUndo.disabled = history.length === 0;
   }
 
   // --- Timer ---

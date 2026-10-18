@@ -81,7 +81,10 @@ function setupGame(options = {}) {
     localStorage,
     grid: document.getElementById('grid'),
     entryInput: document.getElementById('entry-input'),
-    revealAllButton: document.getElementById('btn-reveal-all')
+    revealAllButton: document.getElementById('btn-reveal-all'),
+    revealLetterButton: document.getElementById('btn-reveal-letter'),
+    undoButton: document.getElementById('btn-undo'),
+    resetButton: document.getElementById('btn-reset')
   };
 }
 
@@ -152,4 +155,101 @@ test('revealing the full solution blurs the entry input', () => {
   assert.equal(getLetter(getCell(grid, 0, 0)), 'A');
   assert.equal(getLetter(getCell(grid, 0, 1)), 'B');
   assert.equal(getLetter(getCell(grid, 1, 0)), 'C');
+});
+
+function typeAt(grid, entryInput, row, col, letter) {
+  dispatch(getCell(grid, row, col), 'click');
+  entryInput.value = letter;
+  dispatch(entryInput, 'input');
+}
+
+test('reset returns the puzzle to its starting configuration', () => {
+  const puzzle = createPuzzle();
+  puzzle.revealedLetters = new Set(['C']);
+  const { localStorage, grid, entryInput, revealLetterButton, resetButton } = setupGame({ puzzle });
+
+  assert.equal(getLetter(getCell(grid, 1, 0)), 'C');
+
+  typeAt(grid, entryInput, 0, 0, 'A');
+  typeAt(grid, entryInput, 0, 1, 'X');
+  dispatch(revealLetterButton, 'click');
+
+  dispatch(resetButton, 'click');
+
+  assert.equal(getLetter(getCell(grid, 0, 0)), '');
+  assert.equal(getLetter(getCell(grid, 0, 1)), '');
+  assert.equal(getLetter(getCell(grid, 1, 0)), 'C');
+  assert.ok(getCell(grid, 1, 0).classList.contains('revealed'));
+  assert.deepEqual([...puzzle.revealedLetters], ['C']);
+
+  const savedState = JSON.parse(localStorage.getItem('codeword-state'));
+  assert.deepEqual(savedState.userGuesses, { 3: 'C' });
+  assert.equal(savedState.gameComplete, false);
+});
+
+test('reset does nothing when the confirmation is declined', () => {
+  const { grid, entryInput, resetButton } = setupGame({ confirmResult: false });
+
+  typeAt(grid, entryInput, 0, 0, 'A');
+  dispatch(resetButton, 'click');
+
+  assert.equal(getLetter(getCell(grid, 0, 0)), 'A');
+});
+
+test('undo reverts actions one at a time', () => {
+  const { grid, entryInput, undoButton } = setupGame();
+
+  assert.equal(undoButton.disabled, true);
+
+  typeAt(grid, entryInput, 0, 0, 'A');
+  typeAt(grid, entryInput, 0, 1, 'B');
+  assert.equal(undoButton.disabled, false);
+
+  dispatch(undoButton, 'click');
+  assert.equal(getLetter(getCell(grid, 0, 0)), 'A');
+  assert.equal(getLetter(getCell(grid, 0, 1)), '');
+
+  dispatch(undoButton, 'click');
+  assert.equal(getLetter(getCell(grid, 0, 0)), '');
+  assert.equal(undoButton.disabled, true);
+});
+
+test('undo restores a letter moved from another code', () => {
+  const { grid, entryInput, undoButton } = setupGame();
+
+  typeAt(grid, entryInput, 0, 0, 'A');
+  typeAt(grid, entryInput, 0, 1, 'A');
+  assert.equal(getLetter(getCell(grid, 0, 0)), '');
+  assert.equal(getLetter(getCell(grid, 0, 1)), 'A');
+
+  dispatch(undoButton, 'click');
+  assert.equal(getLetter(getCell(grid, 0, 0)), 'A');
+  assert.equal(getLetter(getCell(grid, 0, 1)), '');
+});
+
+test('undo reverts a deletion, a reset, and revealing the solution', () => {
+  const { grid, entryInput, undoButton, resetButton, revealAllButton } = setupGame();
+
+  typeAt(grid, entryInput, 0, 0, 'A');
+  dispatch(getCell(grid, 0, 0), 'click');
+  dispatch(entryInput, 'keydown', { key: 'Backspace' });
+  assert.equal(getLetter(getCell(grid, 0, 0)), '');
+
+  dispatch(undoButton, 'click');
+  assert.equal(getLetter(getCell(grid, 0, 0)), 'A');
+
+  dispatch(resetButton, 'click');
+  assert.equal(getLetter(getCell(grid, 0, 0)), '');
+  dispatch(undoButton, 'click');
+  assert.equal(getLetter(getCell(grid, 0, 0)), 'A');
+
+  dispatch(revealAllButton, 'click');
+  assert.equal(getLetter(getCell(grid, 1, 0)), 'C');
+  dispatch(undoButton, 'click');
+  assert.equal(getLetter(getCell(grid, 0, 1)), '');
+  assert.equal(getLetter(getCell(grid, 1, 0)), '');
+
+  // Input works again after undoing the solution reveal
+  typeAt(grid, entryInput, 0, 1, 'B');
+  assert.equal(getLetter(getCell(grid, 0, 1)), 'B');
 });
