@@ -15,3 +15,13 @@ test('index includes the hidden entry input used for mobile keyboards', () => {
   assert.match(indexHtml, /autocapitalize="characters"/);
   assert.match(indexHtml, /enterkeyhint="done"/);
 });
+
+test('index includes an info button that opens the guide dialog', () => {
+  assert.match(indexHtml, /id="btn-info"[^>]*aria-haspopup="dialog"[^>]*aria-controls="info-dialog"/);
+  assert.match(indexHtml, /<dialog id="info-dialog"[^>]*aria-labelledby="info-title"/);
+  assert.match(indexHtml, /id="info-close"/);
+});
+
+test('the toast is announced to screen readers', () => {
+  assert.match(indexHtml, /id="message"[^>]*role="status"[^>]*aria-live="polite"/);
+});

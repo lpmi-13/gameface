@@ -34,40 +34,68 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Icon sprite: referenced below with <use href="#i-..."> -->
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-5"/><path d="M12 7.5h.01"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8.3"/><path d="M3 3v5.3h5.3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-hint" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21.5h4"/><path d="M8.9 15A6 6 0 1 1 15.1 15c-.7.6-1.1 1.4-1.1 2.3V18h-4v-.7c0-.9-.4-1.7-1.1-2.3Z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  </svg>
+
   <div id="app">
-    <header>
-      <h1>Daily Codeword</h1>
-      <p class="date" id="puzzle-date"></p>
+    <header class="app-header">
+      <div class="app-title">
+        <h1>Daily Codeword</h1>
+        <p class="date" id="puzzle-date"></p>
+      </div>
+      <button id="btn-info" class="icon-btn" type="button" aria-label="How it works" aria-haspopup="dialog" aria-controls="info-dialog" title="How it works">
+        <svg class="icon"><use href="#i-info"/></svg>
+      </button>
     </header>
 
-    <div id="loading">
-      <p>Generating today's puzzle...</p>
+    <div id="loading" role="status">
+      <p>Generating today's puzzle…</p>
     </div>
+    <noscript><p class="noscript">Daily Codeword needs JavaScript to run.</p></noscript>
 
-    <div id="game-container" class="hidden">
+    <main id="game-container" class="hidden">
       <div class="toolbar">
-        <div class="timer">
-          <span id="timer-display">00:00</span>
-          <button id="timer-toggle" title="Start/Stop timer">Start</button>
+        <div class="toolbar-row">
+          <div class="timer">
+            <svg class="icon icon-muted" aria-hidden="true"><use href="#i-clock"/></svg>
+            <span id="timer-display" role="timer">00:00</span>
+            <button id="timer-toggle" class="btn" type="button">Start</button>
+          </div>
+          <div class="btn-group" role="group" aria-label="Edit">
+            <button id="btn-undo" class="btn" type="button" title="Undo last change (Ctrl+Z)" disabled>
+              <svg class="icon" aria-hidden="true"><use href="#i-undo"/></svg><span>Undo</span>
+            </button>
+            <button id="btn-reset" class="btn" type="button" title="Go back to the starting letters">
+              <svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg><span>Reset</span>
+            </button>
+          </div>
         </div>
-        <div class="actions">
-          <button id="btn-undo" title="Undo last action" disabled>Undo</button>
-          <button id="btn-reset" title="Reset puzzle to its starting state">Reset</button>
-          <button id="btn-check">Check</button>
-          <button id="btn-reveal-letter">Reveal Letter</button>
-          <button id="btn-reveal-all">Solution</button>
+        <div class="toolbar-row help-actions" role="group" aria-label="Help">
+          <button id="btn-check" class="btn btn-primary" type="button" title="Mark right and wrong letters">
+            <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span>Check</span>
+          </button>
+          <button id="btn-reveal-letter" class="btn" type="button" title="Fill in one unsolved number">
+            <svg class="icon" aria-hidden="true"><use href="#i-hint"/></svg><span>Reveal letter</span>
+          </button>
+          <button id="btn-reveal-all" class="btn btn-quiet" type="button" title="Show the whole solution">
+            <svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg><span>Reveal all</span>
+          </button>
         </div>
       </div>
 
       <div id="grid-wrapper">
-        <div id="grid"></div>
+        <div id="grid" aria-label="Puzzle grid"></div>
       </div>
 
-      <div id="letter-strip">
-        <!-- A-Z with their code numbers -->
-      </div>
-
-      <div id="message" class="hidden"></div>
       <input
         id="entry-input"
         class="entry-input"
@@ -78,11 +106,90 @@
         autocorrect="off"
         spellcheck="false"
         enterkeyhint="done"
-        aria-label="Enter puzzle letters"
-        tabindex="-1"
+        aria-label="Type a letter into the selected square"
       >
+
+      <div id="letter-strip" role="list" aria-label="Letter key">
+        <!-- A-Z with their code numbers -->
+      </div>
+    </main>
+
+    <div id="message" class="toast" role="status" aria-live="polite">
+      <span id="message-text"></span>
+      <button id="message-close" class="toast-close" type="button" aria-label="Dismiss" tabindex="-1">
+        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
     </div>
   </div>
+
+  <dialog id="info-dialog" class="dialog" aria-labelledby="info-title">
+    <div class="dialog-body">
+      <div class="dialog-header">
+        <h2 id="info-title">How it works</h2>
+        <button id="info-close" class="icon-btn" type="button" aria-label="Close">
+          <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+      </div>
+
+      <p>Every letter has been swapped for a number from 1 to 26, and the same number is always the same letter. Work out which letter each number stands for to fill the grid with real words.</p>
+
+      <h3>Colors</h3>
+      <ul class="legend">
+        <li>
+          <span class="swatch swatch--given" aria-hidden="true"><span class="swatch-num">9</span><span class="swatch-letter">E</span></span>
+          <span><strong>Given letter.</strong> Revealed at the start or by Reveal letter. It can’t be changed.</span>
+        </li>
+        <li>
+          <span class="swatch" aria-hidden="true"><span class="swatch-num">4</span><span class="swatch-letter">S</span></span>
+          <span><strong>Your letter.</strong> Change or clear it any time.</span>
+        </li>
+        <li>
+          <span class="swatch swatch--selected" aria-hidden="true"><span class="swatch-num">12</span></span>
+          <span><strong>Selected square.</strong> What you type goes here.</span>
+        </li>
+        <li>
+          <span class="swatch swatch--related" aria-hidden="true"><span class="swatch-num">12</span></span>
+          <span><strong>Same number.</strong> These squares all get the letter you type.</span>
+        </li>
+        <li>
+          <span class="swatch swatch--correct" aria-hidden="true"><span class="swatch-num">7</span><span class="swatch-letter">T</span></span>
+          <span><strong>Right.</strong> Shown for a few seconds after you press Check.</span>
+        </li>
+        <li>
+          <span class="swatch swatch--error" aria-hidden="true"><span class="swatch-num">3</span><span class="swatch-letter">K</span></span>
+          <span><strong>Wrong.</strong> Crossed out for a few seconds after you press Check.</span>
+        </li>
+        <li>
+          <span class="swatch swatch--block" aria-hidden="true"></span>
+          <span><strong>Block.</strong> Not part of any word.</span>
+        </li>
+      </ul>
+      <p class="note">The letter key under the grid lists A–Z. Letters you’ve placed show their number underneath, and given letters are shaded gold.</p>
+
+      <h3>Buttons</h3>
+      <dl class="guide">
+        <dt><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>Start / Pause</dt>
+        <dd>Runs the timer. It’s optional.</dd>
+        <dt><svg class="icon" aria-hidden="true"><use href="#i-undo"/></svg>Undo</dt>
+        <dd>Steps back one change.</dd>
+        <dt><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg>Reset</dt>
+        <dd>Clears your letters back to the given ones and resets the timer.</dd>
+        <dt><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Check</dt>
+        <dd>Marks every letter you’ve placed as right or wrong.</dd>
+        <dt><svg class="icon" aria-hidden="true"><use href="#i-hint"/></svg>Reveal letter</dt>
+        <dd>Fills in one number you haven’t solved yet.</dd>
+        <dt><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>Reveal all</dt>
+        <dd>Shows the whole solution and ends today’s puzzle.</dd>
+      </dl>
+
+      <h3>Typing</h3>
+      <ul class="tips">
+        <li>Tap or click a square, then type a letter.</li>
+        <li>Arrow keys move around. Backspace clears. Ctrl+Z (⌘Z on Mac) undoes.</li>
+        <li>Your progress saves in this browser. A new puzzle arrives every day.</li>
+      </ul>
+    </div>
+  </dialog>
 
   <script src="js/seedrandom.js"></script>
   <script src="js/words.js"></script>
