@@ -214,6 +214,14 @@ class FakeElement {
     this.ownerDocument.activeElement = this;
   }
 
+  showModal() {
+    this.open = true;
+  }
+
+  close() {
+    this.open = false;
+  }
+
   blur() {
     if (this.ownerDocument.activeElement === this) {
       this.ownerDocument.activeElement = null;
@@ -335,6 +343,8 @@ class FakeEvent {
     this.type = type;
     this.bubbles = init.bubbles !== false;
     this.key = init.key;
+    this.ctrlKey = Boolean(init.ctrlKey);
+    this.metaKey = Boolean(init.metaKey);
     this.target = init.target || null;
     this.currentTarget = null;
     this.defaultPrevented = false;
@@ -365,6 +375,7 @@ function createGameDocument() {
   const header = append(app, 'header');
   append(header, 'h1', { textContent: 'Daily Codeword' });
   append(header, 'p', { id: 'puzzle-date', className: 'date' });
+  append(header, 'button', { id: 'btn-info' });
 
   const loading = append(app, 'div', { id: 'loading' });
   append(loading, 'p', { textContent: 'Generating today\'s puzzle...' });
@@ -380,18 +391,25 @@ function createGameDocument() {
   append(actions, 'button', { id: 'btn-reset', textContent: 'Reset' });
   append(actions, 'button', { id: 'btn-check', textContent: 'Check' });
   append(actions, 'button', { id: 'btn-reveal-letter', textContent: 'Reveal Letter' });
-  append(actions, 'button', { id: 'btn-reveal-all', textContent: 'Solution' });
+  append(actions, 'button', { id: 'btn-reveal-all', textContent: 'Reveal all' });
 
   const gridWrapper = append(gameContainer, 'div', { id: 'grid-wrapper' });
   append(gridWrapper, 'div', { id: 'grid' });
-  append(gameContainer, 'div', { id: 'letter-strip' });
-  append(gameContainer, 'div', { id: 'message', className: 'hidden' });
 
   const entryInput = append(gameContainer, 'input', {
     id: 'entry-input',
     className: 'entry-input'
   });
   entryInput.value = '';
+
+  append(gameContainer, 'div', { id: 'letter-strip' });
+
+  const message = append(app, 'div', { id: 'message', className: 'toast' });
+  append(message, 'span', { id: 'message-text' });
+  append(message, 'button', { id: 'message-close' });
+
+  const infoDialog = append(document.body, 'dialog', { id: 'info-dialog' });
+  append(infoDialog, 'button', { id: 'info-close' });
 
   return document;
 }
