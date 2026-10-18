@@ -100,12 +100,18 @@ header h1 {
   transition: background 0.15s;
 }
 
-.toolbar button:hover {
+.toolbar button:hover:not(:disabled) {
   background: #e8e8e8;
+}
+
+.toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
